@@ -1,12 +1,10 @@
 require('dotenv').config();
-const { ethers } = require("ethers");
-const HDWalletProvider = require("@truffle/hdwallet-provider");
+const Web3 = require('web3');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+const { abi: ERC20_ABI } = require('@openzeppelin/contracts/build/contracts/IERC20.json');
 
-// Load the seed phrase and Infura project ID from the .env file
 const mnemonic = process.env.MNEMONIC_PHRASE;
 const infuraKey = process.env.INFURA_API_KEY;
-
-const ERC20_ABI = require('./contracts/erc20Abi.json');
 
 const TOKEN_ADDRESS = "0x2FFf2f9ea00D05a494C46787be23748E382f9d61";
 const DISTRIBUTION_LIST = [
@@ -21,25 +19,47 @@ const DISTRIBUTION_LIST = [
   { address: "0x09433D5bDeFB5F66e7f1A8b11660A79E523Bc8DC", amount: "1794" },
 ];
 
+const providerUrl = `https://mainnet.infura.io/v3/${infuraKey}`;
+const provider = new HDWalletProvider({
+  mnemonic,
+  providerOrUrl: providerUrl
+});
+
+const web3 = new Web3(provider);
+const tokenContract = new web3.eth.Contract(ERC20_ABI, TOKEN_ADDRESS);
+
 async function distributeTokens() {
+
+  console.log('Mnemonic:', mnemonic);
+  console.log('Infura Key:', infuraKey);
+  console.log('Starting token distribution...');
+
   try {
-    // Create an HDWalletProvider instance using the seed phrase and the mainnet Infura RPC endpoint
-    const providerUrl = `https://mainnet.infura.io/v3/${infuraKey}`;
-    const walletProvider = new HDWalletProvider(seedPhrase, providerUrl);
+    const [sender] = await web3.eth.getAccounts();
 
-    // Create an ethers provider and signer using the HDWalletProvider
-    const provider = new ethers.providers.Web3Provider(walletProvider);
-    const signer = provider.getSigner();
-
-    // Create the tokenContract instance
-    const tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+    let totalGas = Web3.utils.toBN(0);
+    const gasPrice = Web3.utils.toWei('22', 'gwei');
 
     for (const recipient of DISTRIBUTION_LIST) {
-      const amount = ethers.utils.parseUnits(recipient.amount, "ether");
-      const tx = await tokenContract.transfer(recipient.address, amount);
-      console.log(`Sent ${recipient.amount} tokens to ${recipient.address}, tx hash: ${tx.hash}`);
-      await tx.wait();
+      const { address, amount } = recipient;
+      const value = Web3.utils.toWei(amount, 'ether');
+      const estimatedGas = await tokenContract.methods.transfer(address, value).estimateGas({ from: sender });
+      totalGas = totalGas.add(Web3.utils.toBN(estimatedGas));
     }
+
+    console.log(`Total estimated gas: ${totalGas.toString()}`);
+    const totalCostInWei = Web3.utils.toBN('4286568000000000');
+    const totalCostInEther = Web3.utils.fromWei(totalCostInWei, 'ether');
+    console.log(`Total estimated cost (in ether): ${totalCostInEther}`);
+    
+
+    // Uncomment the following lines if you want to execute the transfers after estimating the gas
+    // for (const recipient of DISTRIBUTION_LIST) {
+    //   const { address, amount } = recipient;
+    //   const value = Web3.utils.toWei(amount, 'ether');
+    //   const tx = await tokenContract.methods.transfer(address, value).send({ from: sender });
+    //   console.log(`Sent ${amount} tokens to ${address}, tx hash: ${tx.transactionHash}`);
+    // }
   } catch (error) {
     console.error("Error distributing tokens:", error);
   }
