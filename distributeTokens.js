@@ -6,7 +6,7 @@ const { abi: ERC20_ABI } = require('@openzeppelin/contracts/build/contracts/IERC
 const mnemonic = process.env.MNEMONIC_PHRASE;
 const infuraKey = process.env.INFURA_API_KEY;
 
-const TOKEN_ADDRESS = "0x2FFf2f9ea00D05a494C46787be23748E382f9d61";
+const TOKEN_ADDRESS = "0xcEAAc35a8992CA451a85A377C831eD9Bc45026e1";
 const DISTRIBUTION_LIST = [
   { address: "0x66860efF3f937a016D1FBef90B090995aEd74D0b", amount: "5907" },
   { address: "0xB32F6B2b3aF360b0FaeABA860A14EC13e8FD3cd9", amount: "2577" },
@@ -38,7 +38,7 @@ async function distributeTokens() {
     const [sender] = await web3.eth.getAccounts();
 
     let totalGas = Web3.utils.toBN(0);
-    const gasPrice = Web3.utils.toWei('22', 'gwei');
+    const gasPrice = Web3.utils.toWei('25', 'gwei');
 
     for (const recipient of DISTRIBUTION_LIST) {
       const { address, amount } = recipient;
@@ -54,12 +54,12 @@ async function distributeTokens() {
     
 
     // Uncomment the following lines if you want to execute the transfers after estimating the gas
-    // for (const recipient of DISTRIBUTION_LIST) {
-    //   const { address, amount } = recipient;
-    //   const value = Web3.utils.toWei(amount, 'ether');
-    //   const tx = await tokenContract.methods.transfer(address, value).send({ from: sender });
-    //   console.log(`Sent ${amount} tokens to ${address}, tx hash: ${tx.transactionHash}`);
-    // }
+    for (const recipient of DISTRIBUTION_LIST) {
+      const { address, amount } = recipient;
+      const value = Web3.utils.toWei(amount, 'ether');
+      const tx = await tokenContract.methods.transfer(address, value).send({ from: sender });
+      console.log(`Sent ${amount} tokens to ${address}, tx hash: ${tx.transactionHash}`);
+    }
   } catch (error) {
     console.error("Error distributing tokens:", error);
   }
