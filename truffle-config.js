@@ -8,7 +8,7 @@ module.exports = {
   networks: {
     // Add mainnet configuration
     mainnet: {
-      provider: () => new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${96b1c61fa7564cc9a8786962bf826cd1}`),
+      provider: () => new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraKey}`),
       network_id: 1,
       gas: 5500000,
       gasPrice: 22 * 10**9, // 20 gwei in wei
